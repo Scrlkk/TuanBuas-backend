@@ -69,11 +69,11 @@ class LoginRequest extends FormRequest
 
                 if ($user->login_attempts >= 5) {
                     $user->is_banned = true;
-                    $user->banned_until = now()->addMinutes(15);
+                    $user->banned_until = now()->addMinutes(1);
                     $user->save();
 
                     throw ValidationException::withMessages([
-                        'email' => 'Akun Anda telah dibanned selama 15 menit.',
+                        'email' => 'Akun Anda telah dibanned selama 1 menit.',
                     ]);
                 }
                 throw ValidationException::withMessages([
