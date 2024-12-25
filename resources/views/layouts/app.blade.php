@@ -29,7 +29,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main class="pb-14">
+            <main>
                 @yield('content')
             </main>
         </div>

@@ -7,7 +7,12 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CommentController;
 
 
-Route::get('/', [PostController::class, 'index'])
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -23,4 +28,4 @@ Route::middleware('auth')->group(function () {
     Route::resource('posts', PostController::class);
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
