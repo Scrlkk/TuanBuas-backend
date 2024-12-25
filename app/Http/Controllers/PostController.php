@@ -11,11 +11,20 @@ use App\Models\Tag;
 class PostController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $posts = Post::all();
+        $query = Post::with('tags', 'category');
 
-        return view('posts.index', compact('posts'));
+        if ($request->has('tag') && $request->tag != '') {
+            $query->whereHas('tags', function ($q) use ($request) {
+                $q->where('tags.id', $request->tag); // Specify the table name for the id column
+            });
+        }
+
+        $posts = $query->get();
+        $allTags = Tag::all(); // Assuming you have a Tag model
+
+        return view('posts.index', compact('posts', 'allTags'));
     }
 
     public function create()
@@ -28,12 +37,12 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-          'title' => 'required|string|max:255',
-        'content' => 'required|string',
-        'status' => 'required|string|in:published,archived',
-        'category_id' => 'required|exists:categories,id',
-        'tags' => 'nullable|string',  // Validasi tag
-        'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048'
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'status' => 'required|string|in:published,archived',
+            'category_id' => 'required|exists:categories,id',
+            'tags' => 'nullable|string',  // Validasi tag
+            'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
 
         // Mengupload gambar jika ada
@@ -44,36 +53,36 @@ class PostController extends Controller
 
         // Membuat post baru
         $post = Post::create([
-           'title' => $request->title,
-           'image' => $imagePath,
-        'content' => $request->content,
-        'status' => $request->status,
-        'user_id' => auth()->id(),
-        'category_id' => $request->category_id,
+            'title' => $request->title,
+            'image' => $imagePath,
+            'content' => $request->content,
+            'status' => $request->status,
+            'user_id' => auth()->id(),
+            'category_id' => $request->category_id,
         ]);
 
         // Memproses tag
-    if ($request->tags) {
-        $tags = explode(',', $request->tags);  // Memisahkan tag berdasarkan koma
-        $tagIds = [];
+        if ($request->tags) {
+            $tags = explode(',', $request->tags);  // Memisahkan tag berdasarkan koma
+            $tagIds = [];
 
-        foreach ($tags as $tag) {
-            // Trim whitespace dan pastikan tag unik
-            $tag = trim($tag);
+            foreach ($tags as $tag) {
+                // Trim whitespace dan pastikan tag unik
+                $tag = trim($tag);
 
-            // Menyimpan tag jika belum ada
-            $existingTag = Tag::firstOrCreate(['name' => $tag]);
+                // Menyimpan tag jika belum ada
+                $existingTag = Tag::firstOrCreate(['name' => $tag]);
 
-            // Menambahkan id tag ke array
-            $tagIds[] = $existingTag->id;
+                // Menambahkan id tag ke array
+                $tagIds[] = $existingTag->id;
+            }
+
+            // Menyambungkan post dengan tag menggunakan relasi many-to-many
+            $post->tags()->sync($tagIds);
         }
 
-        // Menyambungkan post dengan tag menggunakan relasi many-to-many
-        $post->tags()->sync($tagIds);
+        return redirect()->route('posts.index')->with('status', 'Post created successfully');
     }
-
-    return redirect()->route('posts.index')->with('status', 'Post created successfully');
-}
 
     public function show(Post $post)
     {
@@ -87,37 +96,37 @@ class PostController extends Controller
     }
 
     public function update(Request $request, Post $post)
-{
-    $request->validate([
-        'title' => 'required',
-        'content' => 'required',
-        'category_id' => 'required',
-        'status' => 'required|in:published,archived',
-        'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        'tags' => 'array|nullable|string|distinct',
-    ]);
+    {
+        $request->validate([
+            'title' => 'required',
+            'content' => 'required',
+            'category_id' => 'required',
+            'status' => 'required|in:published,archived',
+            'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'tags' => 'array|nullable|string|distinct',
+        ]);
 
-    if ($request->hasFile('image')) {
-        // Simpan gambar di folder 'public/images' dan dapat diakses dengan storage
-        $imagePath = $request->file('image')->store('images', 'public');
-        $post->image = $imagePath;
+        if ($request->hasFile('image')) {
+            // Simpan gambar di folder 'public/images' dan dapat diakses dengan storage
+            $imagePath = $request->file('image')->store('images', 'public');
+            $post->image = $imagePath;
+        }
+
+        $post->update([
+            'title' => $request->title,
+            'content' => $request->content,
+            'category_id' => $request->category_id,
+            'status' => $request->status,
+            'image' => $post->image,
+        ]);
+
+        // Menyimpan tags yang dipilih
+        if ($request->has('tags')) {
+            $post->tags()->sync($request->tags);  // Menyinkronkan tag yang dipilih
+        }
+
+        return redirect()->route('posts.index')->with('success', 'Post updated successfully.');
     }
-
-    $post->update([
-        'title' => $request->title,
-        'content' => $request->content,
-        'category_id' => $request->category_id,
-        'status' => $request->status,
-        'image' => $post->image,
-    ]);
-
-    // Menyimpan tags yang dipilih
-    if ($request->has('tags')) {
-        $post->tags()->sync($request->tags);  // Menyinkronkan tag yang dipilih
-    }
-
-    return redirect()->route('posts.index')->with('success', 'Post updated successfully.');
-}
 
     public function destroy(Post $post)
     {

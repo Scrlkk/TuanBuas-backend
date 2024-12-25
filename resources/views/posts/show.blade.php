@@ -4,27 +4,18 @@
     <div class="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md border border-gray-200 font-sans">
         <h1 class="text-4xl font-bold text-gray-800 mb-4">{{ $post->title }}</h1>
 
-        <!-- Display Post Category and Status -->
-        <div class="text-gray-600 text-sm mb-4">
-            <span class="font-semibold">Category:</span> {{ $post->category->name }}
-        </div>
-        <div class="text-gray-600 text-sm mb-6">
-            <span class="font-semibold">Status:</span> {{ ucfirst($post->status) }}
-        </div>
+<!-- Display Post Category and Status -->
+<div class="text-gray-600 text-sm mb-4">
+    <span class="font-semibold">Category:</span> {{ $post->category->name }}
+</div>
+<div class="text-gray-600 text-sm mb-6">
+    <span class="font-semibold">Status:</span> {{ ucfirst($post->status) }}
+</div>
 
-        <p class="text-gray-700 text-lg mb-6">{{ $post->content }}</p>
+<p class="text-gray-700 text-lg mb-6">{{ $post->content }}</p>
 
-        <!-- Display Show Tag -->
-        <div class="mt-4">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4">Tags</h3>
-            <ul class="flex space-x-2">
-                @foreach ($post->tags as $tag)
-                    <li class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                        {{ $tag->name }}
-                    </li>
-                @endforeach
-            </ul>
-        </div>
+
+
 
         <!-- Display Post Image if available -->
         @if($post->image)
@@ -47,6 +38,20 @@
                 </form>
             </div>
         @endif
+
+                <!-- Display Show Tag -->
+        <div class="pt-4">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Tags</h3>
+            <ul class="flex space-x-2">
+                @foreach ($post->tags as $tag)
+                    <li class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                        <a href="{{ route('posts.index', ['tag' => $tag->id]) }}">
+                            {{ $tag->name }}
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
 
         <!-- Display Comments -->
         <div class="mt-6">
