@@ -35,14 +35,29 @@ class PostController extends Controller
             'status' => 'required|in:published,archived',
             'category_id' => 'required|exists:categories,id',
             'user_id' => 'required|integer',
-            'tag_id' => 'nullable|exists:tags,id',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'exists:tags,id',
         ]);
 
-        $item = Post::create($validated);
+        $post = Post::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'image' => $validated['image'] ?? null,
+            'status' => $validated['status'],
+            'category_id' => $validated['category_id'],
+            'user_id' => $validated['user_id'],
+        ]);
+
+        if (isset($validated['tag_ids'])) {
+            $post->tags()->attach($validated['tag_ids']);
+        }
+
+        $post->load('tags');
+
         return response()->json([
             'status' => true,
             'message' => 'Post created successfully',
-            'data' => $item
+            'data' => $post
         ], 201);
     }
 
@@ -71,8 +86,8 @@ class PostController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $item = Post::find($id);
-        if (!$item) {
+        $post = Post::find($id);
+        if (!$post) {
             return response()->json([
                 'status' => false,
                 'message' => 'Item not found',
@@ -82,22 +97,35 @@ class PostController extends Controller
 
         $validated = $request->validate([
             'title' => 'sometimes|string',
-            'content' => 'nullable|string',
+            'content' => 'sometimes|string',
             'image' => 'nullable|string',
             'status' => 'sometimes|in:published,archived',
             'category_id' => 'sometimes|exists:categories,id',
-            'user_id' => 'required|integer',
-            'tag_id' => 'nullable|exists:tags,id',
+            'user_id' => 'sometimes|integer',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'exists:tags,id',
         ]);
 
-        $item->update($validated);
+        $post->update([
+            'title' => $validated['title'] ?? $post->title,
+            'content' => $validated['content'] ?? $post->content,
+            'image' => $validated['image'] ?? $post->image,
+            'status' => $validated['status'] ?? $post->status,
+            'category_id' => $validated['category_id'] ?? $post->category_id,
+            'user_id' => $validated['user_id'] ?? $post->user_id,
+        ]);
+
+        if (isset($validated['tag_ids'])) {
+            $post->tags()->sync($validated['tag_ids']);
+        }
+
+        $post->load('tags');
+
         return response()->json([
             'status' => true,
             'message' => 'Post updated successfully',
-            'data' => $item->load('category', 'tags')
+            'data' => $post->load('tags')
         ], 200);
-
-
     }
 
     /**

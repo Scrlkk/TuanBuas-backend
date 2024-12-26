@@ -11,6 +11,22 @@ class Post extends Model
 
     protected $fillable = ['title', 'content', 'image', 'category_id', 'status', 'user_id'];
 
+    public function index()
+    {
+        $posts = Post::latest()->get()->map(function ($post) {
+            return $this->formatPostData($post);
+        });
+
+        return response()->json($posts);
+    }
+
+    public function getImageUrlAttribute()
+    {
+        if ($this->image) {
+            return url('storage/' . $this->image);
+        }
+        return null;
+    }
 
     public function category()
     {
@@ -28,5 +44,16 @@ class Post extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
+    private function formatPostData($posts)
+    {
+        return [
+            'id' => $posts->id,
+            'title' => $posts->title,
+            'content' => $posts->content,
+            'image' => $posts->image ? url('storage/' . $posts->image) : null,
+            'category_id' => $posts->category_id,
+            'status' => $posts->status,
+            'user_id' => $posts->user_id
+        ];
+    }
 }
-
